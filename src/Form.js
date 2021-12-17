@@ -1,10 +1,20 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState } from "react";
 import * as yup from 'yup';
 import axios from 'axios';
+
+const formSchema = yup.object().shape({
+    name: yup.string().trim().required('Enter Username').min(3, 'Username has to be more than three characters!'),
+    size: yup.string().oneOf(['Small', 'Medium', 'Large']),
+    pepperoni: yup.string().boolean().oneOf([true]),
+    extraPepperoni: yup.boolean().oneOf([true]),
+    cheese: yup.boolean().oneOf([true]),
+    extraCheese: yup.boolean().oneOf([true]),
+    instructions: yup.string,    
+  })
     
 export default function Form(props) {    
   
-    const initialFormValues = {
+    const [initialFormValues, setInitialValues] = useState({
         name: "",
         size: "",
         pepperoni: false,
@@ -12,9 +22,9 @@ export default function Form(props) {
         cheese: false,
         extraCheese: false,
         instructions: "",
-    }
+    });
 
-    const initialFormErrors = {
+    const [errorState, setErrorState] = useState({
         name: "",
         size: "",
         pepperoni: false,
@@ -22,38 +32,31 @@ export default function Form(props) {
         cheese: false,
         extraCheese: false,
         instructions: "",
-    }
-    const [formValues, setFormValues] = useState(initialFormValues) 
-    const [formErrors, setFormErrors] = useState(initialFormErrors) 
+    });
 
-    const formSchema = yup.object().shape({
-        name: yup.string().trim().required('Enter Username').min(3, 'Username has to be more than three characters!'),
-        size: yup
-          .string().oneOf(['Small', 'Medium', 'Large']),
-        pepperoni: yup 
-          .string().bool(),
-        extraPepperoni: yup.bool(),
-        cheese: yup.bool(),
-        extraCheese: yup.bool(),
-        instructions: yup.string,    
-      })
-    
-
-      useEffect(() => {
-		formSchema.isValid(form).then((valid) => {
-			setButtonDisabled(!valid)
-		})
-	})  
-
-    const [buttonDisabled, setButtonDisabled] = useState(true)  
-   
     const {
         values,
         submit,
         change,
-        disabled,
-        errors,
     } = props
+
+    const validate = (evt) => {
+        yup.reach(formSchema, evt.target.name)
+        .validate(evt.target.value)
+        .then( valid => {
+           setErrorState({
+             ...errorState,
+             [evt.target.name]: ""
+           })
+        })
+        .catch(error => {
+          console.log(error.errors)
+          setErrorState({
+            ...errorState,
+            [evt.target.name]: error.errors[0]
+          })
+        })
+       };
 
     const [form, setForm] = useState(initialFormValues);
 
@@ -62,11 +65,15 @@ export default function Form(props) {
         submit()
     }
 
+    
     const onChange = evt => {
+        /* 🔥 FIX THIS SO IT ALSO WORKS WITH CHECKBOXES */
         const { name, value, checked, type } = evt.target
         const valueToUse = type === 'checkbox' ? checked : value;
         change(name, valueToUse)
+        validate(evt)
     }
+  
 
     const formSubmit = (e) => {
         e.preventDefault();
