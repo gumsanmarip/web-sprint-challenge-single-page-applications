@@ -3,122 +3,107 @@ import * as yup from 'yup';
 import axios from 'axios';
 
 const formSchema = yup.object().shape({
-    name: yup.string().trim().required('Enter Username').min(3, 'Username has to be more than three characters!'),
-    size: yup.string().oneOf(['Small', 'Medium', 'Large']),
-    pepperoni: yup.string().boolean().oneOf([true]),
+    name: yup.string().required('Enter Username'),
+    size: yup.string().required('Small', 'Medium', 'Large'),
+    special: yup.string(),
+    pepperoni: yup.boolean().oneOf([true]),
     extraPepperoni: yup.boolean().oneOf([true]),
     cheese: yup.boolean().oneOf([true]),
     extraCheese: yup.boolean().oneOf([true]),
-    instructions: yup.string,    
-  })
-    
-export default function Form(props) {    
+    instructions: yup.string(),
+})
+
+
+function Form() {
+
+const [form, setForm] = useState(
+  {
+    name: "",
+    size: "",
+    pepperoni: false,
+    extraPepperoni: false,
+    cheese: false,
+    extraCheese: false,
+    instructions: "",
+});
+
+const [errorState, setErrorState] = useState({
+    name: "",
+    size: "",
+    pepperoni: false,
+    extraPepperoni: false,
+    cheese: false,
+    extraCheese: false,
+    instructions: "",
+})
+
+const validate = (e) => {
+ yup.reach(formSchema, e.target.name)
+ .validate(e.target.value)
+ .then( valid => {
+    setErrorState({
+      ...errorState,
+      [e.target.name]: ""
+    })
+ })
+ .catch(error => {
+   console.log(error.errors)
+   setErrorState({
+     ...errorState,
+     [e.target.name]: error.errors[0]
+   })
+ })
+};
+
+const inputChange = e => {
+  e.persist
+  (validate(e))
+  let value = e.target.type === "checkbox" ? e.target.checked : e.target.value;
+  setForm({...form, [e.target.name]: value });
+};
+
+const formSubmit = (e) => {
+  e.preventDefault();
+  axios.post('https://reqres.in/api/users', form)
+  .then(res => console.log(res))
+  .catch(err => console.log(err));
+};
+
+return(
+  <div className="pizzaForm">
+    <h1>Create Pizza</h1>
+        <form onSubmit={formSubmit}>
+            <label>Name
+                <input 
+                    id="name" 
+                    name="name"
+                    type="text" 
+                    value={form.name} 
+                    onChange={inputChange} 
+                />
+                {errorState.name.length > 1 ? <p className="error">{errorState.name}</p> : null}
+            </label>
   
-    const [initialFormValues, setInitialValues] = useState({
-        name: "",
-        size: "",
-        pepperoni: false,
-        extraPepperoni: false,
-        cheese: false,
-        extraCheese: false,
-        instructions: "",
-    });
-
-    const [errorState, setErrorState] = useState({
-        name: "",
-        size: "",
-        pepperoni: false,
-        extraPepperoni: false,
-        cheese: false,
-        extraCheese: false,
-        instructions: "",
-    });
-
-    const {
-        values,
-        submit,
-        change,
-    } = props
-
-    const validate = (evt) => {
-        yup.reach(formSchema, evt.target.name)
-        .validate(evt.target.value)
-        .then( valid => {
-           setErrorState({
-             ...errorState,
-             [evt.target.name]: ""
-           })
-        })
-        .catch(error => {
-          console.log(error.errors)
-          setErrorState({
-            ...errorState,
-            [evt.target.name]: error.errors[0]
-          })
-        })
-       };
-
-    const [form, setForm] = useState(initialFormValues);
-
-    const onSubmit = evt => {
-        evt.preventDefault()
-        submit()
-    }
-
-    
-    const onChange = evt => {
-        /* 🔥 FIX THIS SO IT ALSO WORKS WITH CHECKBOXES */
-        const { name, value, checked, type } = evt.target
-        const valueToUse = type === 'checkbox' ? checked : value;
-        change(name, valueToUse)
-        validate(evt)
-    }
+            <label>Size Select</label>
+                <select 
+                id="size-dropdown" 
+                name="size" 
+                value={form.size} 
+                onChange={inputChange}>
+                    <option value=''>- Select an option -</option>
+                    <option value='small'>Small</option>
+                    <option value='medium'>Medium</option>
+                    <option value='large'>Large</option>
+                </select>
   
-
-    const formSubmit = (e) => {
-        e.preventDefault();
-        axios.post(`https://reqres.in/api/orders`, form)
-            .then(res => { console.log('RES', res) })
-            .catch(err => console.log(err.response));
-        setForm(initialFormValues)
-        };
-
-    return (
-        <div>
-            <form className={formSubmit} onSubmit={onSubmit}>
-                <h2>Create Pizza</h2>
-            
-                <div className='form-group inputs'>
-
-                    <label>Name
-                    <input
-                        value={values.name}
-                        onChange={onChange}
-                        name='name'
-                        type='text'
-                    />
-                    </label>
-
-                    <label>Size
-                    <select
-                        onChange={onChange}
-                        value={values.role}
-                        name='size'
-                    >
-                        <option value=''>- Select an option -</option>
-                        <option value='small'>Small</option>
-                        <option value='medium'>Medium</option>
-                        <option value='large'>Large</option>
-                    </select>
-                    </label>
-
+            <label>Choose Your Toppings Below:</label>
                     <label>Pepperoni
                     <input
                         id="toppings"
                         type='checkbox'
                         name='pepperoni'
-                        checked={values.pepperoni}
-                        onChange={onChange}
+                        checked={form.pepperoni}
+                        onChange={inputChange}
                     />
                     </label>
 
@@ -127,8 +112,8 @@ export default function Form(props) {
                         id="toppings"
                         type='checkbox'
                         name='extraPepperoni'
-                        checked={values.extraPepperoni}
-                        onChange={onChange}
+                        checked={form.extraPepperoni}
+                        onChange={inputChange}
                     />
                     </label>
 
@@ -137,8 +122,8 @@ export default function Form(props) {
                         id="toppings"
                         type='checkbox'
                         name='cheese'
-                        checked={values.cheese}
-                        onChange={onChange}
+                        checked={form.cheese}
+                        onChange={inputChange}
                     />
                     </label>
 
@@ -147,29 +132,27 @@ export default function Form(props) {
                         id="toppings"
                         type='checkbox'
                         name='extraCheese'
-                        checked={values.extraCheese}
-                        onChange={onChange}
+                        checked={form.extraCheese}
+                        onChange={inputChange}
                     />
                     </label>
-
-                    <label>Special instructions
-                    <input
-                        value={values.instructions}
-                        onChange={onChange}
-                        name='instructions'
-                        type='text'
-                    />
-                    </label>
-
-                    <button
+            <label>Special instructions</label>
+                <textarea 
+                    name="instructions"
+                    id="instructions"
+                    placeholder="Instructions"
+                    value={form.instructions}
+                    onChange={inputChange}
+                />
+                <button
                     name="order-button"
                     type="submit">
                         Place Order
-                    </button>
+                </button>
 
-                </div>
+</form>
+</div>
+);
+}
 
-            </form>
-        </div>
-    )
-    }
+export default Form;
